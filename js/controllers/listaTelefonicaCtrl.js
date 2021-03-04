@@ -1,46 +1,54 @@
-angular.module("listaTelefonica").controller("listaTelefonicaCtrl", function ($scope, $http) {
+angular.module("listaTelefonica", []).controller("listaTelefonicaCtrl", function ($scope, contatosAPI, operadorasAPI) {
 	$scope.app = "Lista Telefonica";
 	$scope.contatos = [];
 	$scope.operadoras = [];
 
 	var carregarContatos = function() {
-		$http({
-		method: 'GET',
-		url: "http://localhost:3412/contatos"
-
-	}).then(function(data){
-		$scope.contatos = data;
-	}).error(function(data){
-		$scope.message = "Aconteceu um problema: " + data;
-	});
+		contatosAPI.getContatos().then(function(data) {	
+			return $scope.contatos = data.data;
+		});
 	};
 
 	var carregarOperadoras = function () {
-		$http({
-			method: 'GET',
-			url: "http://localhost:3412/operadoras"
-		
-		}).then(function(success, data){
-			$scope.operadoras = data;
-		},function(error){
+		operadorasAPI.getOperadoras().then(function(data){
+			return $scope.operadoras = data.data;
 		});
 	};
 
 	$scope.adicionarContato = function (contato) {
-		contato.data = new Date();
-		$http({
-			method: 'POST',
-			url: "http://localhost:3412/contatos"
-		}).then(function(success){
+		contatosAPI.saveContato(contato).then(function(data){
 			delete $scope.contato;
 			$scope.contatoForm.$setPristine();
 			carregarContatos();
-		},function(error){
 		});
-		
 	};
 
+	$scope.apagarContatos = function (contatos) {
+		$http({
+			method: 'DELETE',
+			url: "http://localhost:3412/contatos",
+			data: contatos.filter(function(contato){
+				if (contato.selecionado) return contato;})
+
+		}).then(function(data){
+			delete $scope.contatos;
+			$scope.contatoForm.$setPristine(); 
+			carregarContatos();
+		});
+	};
+
+	$scope.isContatoSelecionado = function (contatos) {
+		return contatos.some(function (contato) {
+			return contato.selecionado;
+		});
+	};
+
+	$scope.ordenarPor = function (campo) {
+		$scope.criterioDeOrdenacao = campo;
+		$scope.direcaoDaOrdenacao = !$scope.direcaoDaOrdenacao;
+	};
 
 	carregarContatos();
 	carregarOperadoras();
+
 });
